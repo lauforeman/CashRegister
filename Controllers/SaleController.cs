@@ -23,7 +23,7 @@ namespace CashRegister.Controllers
           {
               return NotFound();
           }
-            return await _context.Sales.ToListAsync();
+            return await _context.Sales.Include(s => s.ProductSales).ToListAsync();
         }
 
         // GET: api/Sale/5
@@ -34,7 +34,7 @@ namespace CashRegister.Controllers
           {
               return NotFound();
           }
-            var sale = await _context.Sales.FindAsync(id);
+            var sale = await _context.Sales.Include(s=> s.ProductSales).FirstOrDefaultAsync(s => s.SaleId == id);
 
             if (sale == null)
             {
@@ -78,12 +78,56 @@ namespace CashRegister.Controllers
         // POST: api/Sale
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Sale>> PostSale(Sale sale)
+        public async Task<ActionResult<Sale>> PostSale(SaleRequest saleRequest)
         {
           if (_context.Sales == null)
           {
               return Problem("Entity set 'CashRegisterContext.Sales'  is null.");
           }
+
+            var sale = new Sale();
+            sale.ApartmentNumber = saleRequest.ApartmentNumber;
+            sale.IsLoan = saleRequest.IsLoan;
+            sale.Payment = saleRequest.Payment;
+
+            var productIds = saleRequest.ProductSales.Select(ps => ps.ProductID).ToList();
+
+            var products = await _context.Products.Where(p => productIds.Contains(p.ProductId))
+                                                  .ToListAsync();
+
+            var productSales = new List<ProductSale>();
+            var total = 0;
+            foreach (var productSaleRequest in saleRequest.ProductSales)
+            {
+                var product = products.Find(p => p.ProductId == productSaleRequest.ProductID);
+                if (product == null || product.Quantity < productSaleRequest.Quantity){
+                    return BadRequest( new {
+                        Error = "Insufficient Inventory"
+                    });
+                }
+                
+                product.Quantity -= productSaleRequest.Quantity;
+                _context.Entry(product).State = EntityState.Modified;
+
+                total += product.SalePrice * productSaleRequest.Quantity;
+                productSales.Add(new ProductSale {
+                    Price = product.SalePrice,
+                    ProductID = productSaleRequest.ProductID,
+                    Quantity = productSaleRequest.Quantity
+                });
+            }
+
+            sale.ProductSales = productSales;
+
+            if (sale.Payment < total) {
+                return BadRequest( new {
+                        Error = "The payment amount is insufficient"
+                    });
+            }
+
+            sale.Total = total;
+            sale.Date = DateTime.Now;
+
             _context.Sales.Add(sale);
             await _context.SaveChangesAsync();
 
