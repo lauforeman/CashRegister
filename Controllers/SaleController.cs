@@ -99,7 +99,8 @@ namespace CashRegister.Controllers
             var total = 0;
             foreach (var productSaleRequest in saleRequest.ProductSales)
             {
-                var product = products.Find(p => p.ProductId == productSaleRequest.ProductID);
+                var product = products.Find(p => p.ProductId == productSaleRequest.ProductID
+                && p.IsActive);
                 if (product == null || product.Quantity < productSaleRequest.Quantity){
                     return BadRequest( new {
                         Error = "Insufficient Inventory"
