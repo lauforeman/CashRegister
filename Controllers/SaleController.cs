@@ -99,9 +99,13 @@ namespace CashRegister.Controllers
             var total = 0;
             foreach (var productSaleRequest in saleRequest.ProductSales)
             {
-                var product = products.Find(p => p.ProductId == productSaleRequest.ProductID
-                && p.IsActive);
+                var product = products.Find(p => p.ProductId == productSaleRequest.ProductID);
                 if (product == null || product.Quantity < productSaleRequest.Quantity){
+                    if (product != null && !product.IsActive){
+                        return BadRequest( new {
+                        Error = $"The product {product.Name} is inactive"
+                    });
+                    }
                     return BadRequest( new {
                         Error = "Insufficient Inventory"
                     });
