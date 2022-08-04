@@ -19,10 +19,10 @@ namespace CashRegister.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Sale>>> GetSales()
         {
-          if (_context.Sales == null)
-          {
-              return NotFound();
-          }
+            if (_context.Sales == null)
+            {
+                return NotFound();
+            }
             return await _context.Sales.Include(s => s.ProductSales).ToListAsync();
         }
 
@@ -30,11 +30,11 @@ namespace CashRegister.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<Sale>> GetSale(int id)
         {
-          if (_context.Sales == null)
-          {
-              return NotFound();
-          }
-            var sale = await _context.Sales.Include(s=> s.ProductSales).FirstOrDefaultAsync(s => s.SaleId == id);
+            if (_context.Sales == null)
+            {
+                return NotFound();
+            }
+            var sale = await _context.Sales.Include(s => s.ProductSales).FirstOrDefaultAsync(s => s.SaleId == id);
 
             if (sale == null)
             {
@@ -80,10 +80,10 @@ namespace CashRegister.Controllers
         [HttpPost]
         public async Task<ActionResult<Sale>> PostSale(SaleRequest saleRequest)
         {
-          if (_context.Sales == null)
-          {
-              return Problem("Entity set 'CashRegisterContext.Sales'  is null.");
-          }
+            if (_context.Sales == null)
+            {
+                return Problem("Entity set 'CashRegisterContext.Sales'  is null.");
+            }
 
             var sale = new Sale();
             sale.ApartmentNumber = saleRequest.ApartmentNumber;
@@ -100,22 +100,27 @@ namespace CashRegister.Controllers
             foreach (var productSaleRequest in saleRequest.ProductSales)
             {
                 var product = products.Find(p => p.ProductId == productSaleRequest.ProductID);
-                if (product == null || product.Quantity < productSaleRequest.Quantity){
-                    if (product != null && !product.IsActive){
-                        return BadRequest( new {
-                        Error = $"The product {product.Name} is inactive"
-                    });
-                    }
-                    return BadRequest( new {
+                if (product == null || product.Quantity < productSaleRequest.Quantity)
+                {
+                    return BadRequest(new
+                    {
                         Error = "Insufficient Inventory"
                     });
                 }
-                
+                else if (!product.IsActive)
+                {
+                    return BadRequest(new
+                    {
+                        Error = $"The product {product.Name} is inactive"
+                    });
+                }
+
                 product.Quantity -= productSaleRequest.Quantity;
                 _context.Entry(product).State = EntityState.Modified;
 
                 total += product.SalePrice * productSaleRequest.Quantity;
-                productSales.Add(new ProductSale {
+                productSales.Add(new ProductSale
+                {
                     Price = product.SalePrice,
                     ProductID = productSaleRequest.ProductID,
                     Quantity = productSaleRequest.Quantity
@@ -124,10 +129,12 @@ namespace CashRegister.Controllers
 
             sale.ProductSales = productSales;
 
-            if (sale.Payment < total) {
-                return BadRequest( new {
-                        Error = "The payment amount is insufficient"
-                    });
+            if (sale.Payment < total)
+            {
+                return BadRequest(new
+                {
+                    Error = "The payment amount is insufficient"
+                });
             }
 
             sale.Total = total;
