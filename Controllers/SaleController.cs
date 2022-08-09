@@ -129,7 +129,7 @@ namespace CashRegister.Controllers
 
             sale.ProductSales = productSales;
 
-            if (sale.Payment < total)
+            if (sale.Payment < total || sale.IsLoan)
             {
                 return BadRequest(new
                 {
