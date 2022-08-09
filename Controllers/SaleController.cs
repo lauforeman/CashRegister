@@ -139,6 +139,16 @@ namespace CashRegister.Controllers
 
             sale.Total = total;
             sale.Date = DateTime.Now;
+            if(sale.IsLoan){
+                sale.Payment = 0;
+                if(string.IsNullOrEmpty(sale.ApartmentNumber))
+                {
+                    throw new Exception("The Apartment Number is required if it's a loan");
+                }
+            }else if(sale.Payment < sale.Total) 
+            {
+                throw new Exception("The Total value is higher that the payment");
+            }
 
             _context.Sales.Add(sale);
             await _context.SaveChangesAsync();
