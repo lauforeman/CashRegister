@@ -23,7 +23,7 @@ namespace CashRegister.Controllers
             {
                 return NotFound();
             }
-            return await _context.Sales.Include(s => s.ProductSales).ToListAsync();
+            return await _context.Sales.Include("ProductSales.Product").ToListAsync();
         }
 
         // GET: api/Sale/5
